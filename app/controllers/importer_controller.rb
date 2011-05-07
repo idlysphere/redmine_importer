@@ -133,7 +133,6 @@ class ImporterController < ApplicationController
     add_categories = params[:add_categories]
     add_versions = params[:add_versions]
     unique_attr = fields_map[unique_field]
-    unique_attr_checked = false  # Used to optimize some work that has to happen inside the loop   
 
     # attrs_map is fields_map's invert
     attrs_map = fields_map.invert
@@ -149,6 +148,20 @@ class ImporterController < ApplicationController
     if unique_required && unique_attr == nil
       flash[:error] = "Unique field must be specified"
       return
+    end
+
+    # trnaslate unique_attr if it's a custom field
+    if unique_field && !ISSUE_ATTRS.include?(unique_attr.to_sym)
+      @project.all_issue_custom_fields.each do |cf|
+        if cf.name == unique_attr
+          if !cf.is_filter
+            flash[:error] = "Unique field #{unique_attr} is not filter"
+            return
+          end
+          unique_attr = "cf_#{cf.id}"
+          break
+        end
+      end
     end
 
     FasterCSV.new(iip.csv_data, {:headers=>true, :encoding=>iip.encoding, 
@@ -182,19 +195,6 @@ class ImporterController < ApplicationController
       issue.project_id = project != nil ? project.id : @project.id
       issue.tracker_id = tracker != nil ? tracker.id : default_tracker
       issue.author_id = author != nil ? author.id : User.current.id
-
-      # trnaslate unique_attr if it's a custom field -- only on the first issue
-      if !unique_attr_checked
-        if unique_field && !ISSUE_ATTRS.include?(unique_attr.to_sym)
-          issue.available_custom_fields.each do |cf|
-            if cf.name == unique_attr
-              unique_attr = "cf_#{cf.id}"
-              break
-            end
-          end
-        end
-        unique_attr_checked = true
-      end
 
       if update_issue
         begin
