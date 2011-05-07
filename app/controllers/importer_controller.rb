@@ -89,8 +89,6 @@ class ImporterController < ApplicationController
     
     if issues.size > 1
       flash[:warning] = "Unique field #{unique_attr}  with value '#{attr_value}' has duplicate record"
-      @failed_count += 1
-      @failed_issues[@handle_count + 1] = row
       raise MultipleIssuesForUniqueValue, "Unique field #{unique_attr}  with value '#{attr_value}' has duplicate record"
     else
       if issues.size == 0
@@ -230,6 +228,8 @@ class ImporterController < ApplicationController
           end
           
         rescue MultipleIssuesForUniqueValue
+          @failed_count += 1
+          @failed_issues[@handle_count + 1] = row
           break
         end
       end
@@ -267,6 +267,8 @@ class ImporterController < ApplicationController
           next
         end
       rescue MultipleIssuesForUniqueValue
+        @failed_count += 1
+        @failed_issues[@handle_count + 1] = row
         break
       end
 
@@ -332,6 +334,8 @@ class ImporterController < ApplicationController
             next
           end
         rescue MultipleIssuesForUniqueValue
+          @failed_count += 1
+          @failed_issues[@handle_count + 1] = row
           break
         end
       end
