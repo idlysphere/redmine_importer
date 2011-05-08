@@ -27,9 +27,9 @@ class ImporterController < ApplicationController
     iip = ImportInProgress.find_or_create_by_user_id(User.current.id)
     iip.quote_char = params[:wrapper]
     iip.col_sep = params[:splitter]
-    iip.encoding = params[:encoding]
+    iip.encoding = 'U'
     iip.created = Time.new
-    iip.csv_data = params[:file].read
+    iip.csv_data = convert_string(params[:file].read, params[:encoding])
     iip.save
     
     # Put the timestamp in the params to detect
@@ -365,4 +365,13 @@ private
     @project = Project.find(params[:project_id])
   end
   
+  def convert_string(string, encoding)
+    nkf_option = 
+      case encoding
+      when 'S' then 'S'
+      when 'EUC' then 'E'
+      end
+    nkf_option ? NKF.nkf('-m0xw' + nkf_option, string) : string
+  end
+
 end
